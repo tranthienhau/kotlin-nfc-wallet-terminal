@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stripe Tap to Pay Fallback</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        .animate-pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .nfc-gradient {
+            background: radial-gradient(circle at center, rgba(4, 41, 186, 0.08) 0%, transparent 70%);
+        }
+        /* Custom scrollbar for clean UI */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c5c5d7; border-radius: 10px; }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-container": "#fffbff",
+                    "on-primary-fixed": "#000f5d",
+                    "surface-tint": "#364ed8",
+                    "on-secondary-fixed-variant": "#2f2ebe",
+                    "surface-container-lowest": "#ffffff",
+                    "outline": "#757686",
+                    "on-tertiary-container": "#ffc0aa",
+                    "surface": "#f8f9ff",
+                    "secondary-fixed": "#e1e0ff",
+                    "tertiary-fixed": "#ffdbce",
+                    "surface-container": "#e5eeff",
+                    "outline-variant": "#c5c5d7",
+                    "on-background": "#0b1c30",
+                    "surface-dim": "#cbdbf5",
+                    "primary-fixed-dim": "#bbc3ff",
+                    "inverse-surface": "#213145",
+                    "tertiary-container": "#9d3500",
+                    "inverse-primary": "#bbc3ff",
+                    "on-tertiary-fixed-variant": "#802a00",
+                    "primary-fixed": "#dee0ff",
+                    "on-tertiary-fixed": "#380d00",
+                    "surface-container-low": "#eff4ff",
+                    "error": "#ba1a1a",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#c5cbff",
+                    "inverse-on-surface": "#eaf1ff",
+                    "tertiary-fixed-dim": "#ffb59a",
+                    "on-secondary-fixed": "#07006c",
+                    "secondary-container": "#6063ee",
+                    "on-surface": "#0b1c30",
+                    "on-primary": "#ffffff",
+                    "surface-bright": "#f8f9ff",
+                    "on-primary-fixed-variant": "#1432c0",
+                    "background": "#f8f9ff",
+                    "primary-container": "#2e47d1",
+                    "surface-container-highest": "#d3e4fe",
+                    "surface-container-high": "#dce9ff",
+                    "primary": "#0429ba",
+                    "on-error-container": "#93000a",
+                    "on-error": "#ffffff",
+                    "secondary": "#4648d4",
+                    "on-surface-variant": "#444654",
+                    "surface-variant": "#d3e4fe",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed-dim": "#c0c1ff",
+                    "tertiary": "#762600",
+                    "error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "20px",
+                    "base-unit": "4px",
+                    "stack-md": "16px",
+                    "stack-sm": "8px",
+                    "touch-target-min": "48px",
+                    "gutter": "16px",
+                    "stack-lg": "24px"
+            },
+            "fontFamily": {
+                    "display-currency": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "numeric-data": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "display-currency": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["28px", {"lineHeight": "34px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "30px", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "26px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "numeric-data": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col font-body-md overflow-hidden">
+<!-- Top AppBar (from JSON) -->
+<header class="bg-surface docked full-width top-0 flex justify-between items-center w-full px-margin-mobile h-touch-target-min z-50">
+<div class="flex items-center gap-stack-sm">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<h1 class="text-headline-md font-headline-md font-bold text-primary">FinTech Agent</h1>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a financial services agent, styled in a clean, modern corporate aesthetic. The agent has a welcoming and confident expression. The background is a soft-focus office interior with high-key lighting and a palette of whites and deep indigo blues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcIuqL7M23GYGlqI-3Zl8oSzupp95d_xeLcHyRN7ZH4YtdkPX-XdCyOfjb8vaonZQXNWG_Z5WymQeMwcH7qqmLx3sJNAZ069rllbMwZanaLiLY8rNlJaokQYMggMqSdwK4NEnN4tHeku8lQutHk0Aq5uo51mJwKYXeP4XBAtp0EWv3GOuD7Lja3UZYyUOe1XrnBN5vCDmFr5WD-oGlShrYdWR-AaegSXR-sZyJajqLoBgpgvfjywZBFhXPVGKOtUALeo-8T_JVMcc"/>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center justify-center px-margin-mobile relative">
+<!-- Floating Ambient Decoration -->
+<div class="absolute inset-0 pointer-events-none nfc-gradient z-0"></div>
+<!-- Balance Hero Section -->
+<div class="w-full max-w-md bg-primary/5 rounded-xl p-stack-lg mb-stack-lg border border-primary/10 text-center relative z-10">
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-widest uppercase">Remaining Balance</span>
+<div class="flex items-center justify-center mt-2">
+<span class="font-display-currency text-display-currency text-primary">$12.50</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 opacity-80">Fallback payment required</p>
+</div>
+<!-- NFC Interaction Area -->
+<div class="relative flex flex-col items-center justify-center w-64 h-64 mb-stack-lg z-10 cursor-pointer group" id="nfc-target">
+<!-- Pulsing Rings -->
+<div class="absolute inset-0 rounded-full border-2 border-primary/20 animate-pulse-ring"></div>
+<div class="absolute inset-0 rounded-full border-2 border-primary/10 animate-pulse-ring" style="animation-delay: 0.7s;"></div>
+<div class="absolute inset-0 rounded-full border-2 border-primary/5 animate-pulse-ring" style="animation-delay: 1.4s;"></div>
+<!-- Target Visual -->
+<div class="w-48 h-48 rounded-full bg-white shadow-lg border border-outline-variant flex flex-col items-center justify-center transition-transform duration-300 group-active:scale-95">
+<span class="material-symbols-outlined text-primary text-[64px]" data-icon="contactless" style="font-variation-settings: 'FILL' 0, 'wght' 200;">contactless</span>
+<span class="font-label-caps text-label-caps text-primary mt-2">TAP CARD HERE</span>
+</div>
+</div>
+<!-- Status Messaging -->
+<div class="w-full max-w-xs text-center z-10 min-h-[80px]" id="status-container">
+<!-- Status: Ready (Default) -->
+<div class="flex flex-col items-center" id="status-ready">
+<div class="flex items-center gap-2 mb-2">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="font-numeric-data text-numeric-data text-primary">Ready to pay</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Hold your card or phone near the center of the screen</p>
+</div>
+<!-- Status: Connecting (Hidden) -->
+<div class="hidden flex flex-col items-center" id="status-connecting">
+<div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3"></div>
+<span class="font-numeric-data text-numeric-data text-primary">Connecting to Reader...</span>
+</div>
+<!-- Status: Success (Hidden) -->
+<div class="hidden flex flex-col items-center" id="status-success">
+<div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-on-secondary-container" data-icon="check_circle">check_circle</span>
+</div>
+<span class="font-numeric-data text-numeric-data text-secondary">Payment Successful</span>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Transaction ID: STR-9921-X</p>
+</div>
+</div>
+<!-- Secondary Action -->
+<div class="mt-stack-lg z-10 w-full max-w-md">
+<button class="w-full h-touch-target-min flex items-center justify-center gap-2 text-primary font-bold border border-primary rounded-lg hover:bg-primary/5 transition-colors" onclick="window.history.back()">
+<span class="material-symbols-outlined text-[20px]" data-icon="arrow_back">arrow_back</span>
+                Return to Wallet Flow
+            </button>
+</div>
+</main>
+<!-- Bottom Navigation (from JSON) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-2 h-[80px] bg-surface border-t border-outline-variant">
+<!-- Scan (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-stack-md py-stack-sm hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" data-icon="nfc">nfc</span>
+<span class="text-label-caps font-label-caps">Scan</span>
+</button>
+<!-- Charge (Active) -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-stack-md py-stack-sm scale-95 transition-transform duration-100">
+<span class="material-symbols-outlined" data-icon="payments" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="text-label-caps font-label-caps">Charge</span>
+</button>
+<!-- History (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-stack-md py-stack-sm hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="text-label-caps font-label-caps">History</span>
+</button>
+<!-- Sync (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-stack-md py-stack-sm hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+<span class="text-label-caps font-label-caps">Sync</span>
+</button>
+</nav>
+<!-- Success Feedback Overlay (Hidden by Default) -->
+<div class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500" id="success-overlay">
+<div class="relative">
+<div class="w-24 h-24 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[48px] text-on-secondary-container" data-icon="check">check</span>
+</div>
+<!-- Animated ring for success -->
+<div class="absolute inset-0 rounded-full border-4 border-secondary animate-ping opacity-25"></div>
+</div>
+<h2 class="mt-stack-lg font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Payment Complete</h2>
+<p class="mt-2 text-body-lg font-body-lg text-on-surface-variant">Your transaction was successful.</p>
+<button class="mt-12 h-[56px] w-64 bg-primary text-white font-bold rounded-lg shadow-md active:scale-95 transition-transform" onclick="location.reload()">
+            Finish
+        </button>
+</div>
+<script>
+        const nfcTarget = document.getElementById('nfc-target');
+        const statusReady = document.getElementById('status-ready');
+        const statusConnecting = document.getElementById('status-connecting');
+        const successOverlay = document.getElementById('success-overlay');
+
+        // Simulation for Tap Action
+        nfcTarget.addEventListener('click', () => {
+            // Step 1: Connecting
+            statusReady.classList.add('hidden');
+            statusConnecting.classList.remove('hidden');
+
+            // Step 2: Haptic Feedback & Connection delay
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(50);
+            }
+
+            setTimeout(() => {
+                // Step 3: Success Overlay
+                successOverlay.classList.remove('pointer-events-none');
+                successOverlay.classList.add('opacity-100');
+                
+                if (window.navigator && window.navigator.vibrate) {
+                    window.navigator.vibrate([50, 30, 100]);
+                }
+            }, 1800);
+        });
+
+        // Toggle Dark Mode via system or manual (though prompt requested Light)
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            // document.documentElement.classList.add('dark');
+        }
+    </script>
+</body></html>

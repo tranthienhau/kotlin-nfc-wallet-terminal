@@ -1,0 +1,7 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.SecureFlux" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#f8f9ff</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">#f8f9ff</item>
+    </style>
+</resources>
