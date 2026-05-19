@@ -33,6 +33,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE syncState != 'SYNCED'")
     suspend fun getUnsynced(): List<Transaction>
 
+    @Query("SELECT * FROM transactions")
+    suspend fun getAll(): List<Transaction>
+
     /** Idempotency guard: a row already exists for this key -> caller must not re-charge. */
     @Query("SELECT * FROM transactions WHERE idempotencyKey = :key LIMIT 1")
     suspend fun findByIdempotencyKey(key: String): Transaction?

@@ -118,6 +118,8 @@ class WalletRepository(private val dao: TransactionDao) {
 
     fun setOnline(value: Boolean) { _online.value = value }
 
+    suspend fun transactionsSnapshot(): List<Transaction> = dao.getAll()
+
     /** Reconcile every local row with WooCommerce. Emits progress 0f..1f. */
     suspend fun forceSync(onProgress: suspend (Float) -> Unit) {
         var p = 0f
