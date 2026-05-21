@@ -124,6 +124,18 @@ class WalletViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // --- Deterministic state hooks for screenshot capture (debug only) ---
+    fun demoScanComplete() { _scan.value = ScanPhase.COMPLETE }
+    fun demoAmount(value: String) {
+        _amount.value = value
+        revalidate()
+    }
+    fun demoFallbackSuccess() { _fallback.value = FallbackPhase.SUCCESS }
+    fun demoSync(progress: Float, online: Boolean) {
+        repo.setOnline(online)
+        _syncProgress.value = progress
+    }
+
     init {
         viewModelScope.launch {
             // seed once

@@ -50,20 +50,45 @@ import com.secureflux.wallet.ui.theme.SecureFluxTheme
 import com.secureflux.wallet.ui.theme.Surface as SurfaceColor
 import com.secureflux.wallet.vm.WalletViewModel
 
+/** Optional intent extras used by the screenshot harness to land on a fixed state. */
+data class Demo(val screen: String?, val variant: String?)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { SecureFluxTheme { App() } }
+        val demo = Demo(intent.getStringExtra("screen"), intent.getStringExtra("variant"))
+        setContent { SecureFluxTheme { App(demo = demo) } }
     }
 }
 
 @Composable
-private fun App(vm: WalletViewModel = viewModel()) {
+private fun App(vm: WalletViewModel = viewModel(), demo: Demo = Demo(null, null)) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
     val showBars = route != Dest.Fallback
+
+    androidx.compose.runtime.LaunchedEffect(demo) {
+        kotlinx.coroutines.delay(150)
+        when (demo.screen) {
+            "scan" -> if (demo.variant == "result") vm.demoScanComplete()
+            "charge" -> {
+                nav.navigate(Dest.Charge.route)
+                if (demo.variant == "insufficient") vm.demoAmount("999.00")
+                else vm.demoAmount("18.50")
+            }
+            "fallback" -> {
+                nav.navigate(Dest.Fallback)
+                if (demo.variant == "success") vm.demoFallbackSuccess()
+            }
+            "history" -> nav.navigate(Dest.History.route)
+            "sync" -> {
+                nav.navigate(Dest.Sync.route)
+                vm.demoSync(if (demo.variant == "progress") 0.55f else -1f, online = true)
+            }
+        }
+    }
 
     Surface(Modifier.fillMaxSize(), color = SurfaceColor) {
         Column(Modifier.fillMaxSize()) {
